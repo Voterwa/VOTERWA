@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Cooperative Members – Voterwa</title>
+<style>
+body {margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;min-height:100vh;padding:40px 20px;}
+h1{text-align:center;font-size:2.5rem;margin-bottom:30px;text-shadow:1px 1px 5px rgba(0,0,0,0.7);}
+.form-container{max-width:800px;margin:0 auto;background:rgba(255,255,255,0.1);padding:30px;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,0.5);}
+.input-group{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:20px;}
+input{flex:1;padding:12px;font-size:1.1rem;border:none;border-radius:8px;}
+button{padding:12px 30px;font-size:1.1rem;border:none;border-radius:10px;background-color:#007bff;color:white;cursor:pointer;transition:0.3s;}
+button:hover{background-color:#00bfff;}
+table{width:100%;margin-top:25px;border-collapse:collapse;background:rgba(255,255,255,0.1);}
+th, td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.2);text-align:left;}
+th{background:rgba(0,0,0,0.3);}
+.delete-btn{background:red;border:none;color:white;padding:8px 15px;border-radius:8px;cursor:pointer;}
+.delete-btn:hover{background:darkred;}
+#startBtn{background:green;}
+#stopBtn{background:red;}
+</style>
+</head>
+<body>
+
+<h1>Create Cooperative Members</h1>
+
+<div class="form-container">
+  <div class="input-group">
+    <input type="text" id="memberName" placeholder="Enter member name...">
+    <input type="text" id="memberCode" placeholder="Enter member code...">
+    <button id="addMemberBtn">Add Member</button>
+  </div>
+
+  <table id="membersTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Code</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div style="text-align:center;margin-top:20px;">
+    <button id="saveListBtn">Save List</button>
+    <button id="startBtn">Start Election</button>
+    <button id="stopBtn">Stop Election</button>
+  </div>
+</div>
+
+<script>
+const adminCode=localStorage.getItem('adminCode');
+if(!adminCode) window.location.href="index.html";
+
+let members=JSON.parse(localStorage.getItem(`members_${adminCode}`))||[];
+
+const nameInput=document.getElementById('memberName');
+const codeInput=document.getElementById('memberCode');
+const addBtn=document.getElementById('addMemberBtn');
+const saveBtn=document.getElementById('saveListBtn');
+const tableBody=document.querySelector('#membersTable tbody');
+
+function renderTable(){
+  tableBody.innerHTML='';
+  members.forEach((member,index)=>{
+    const row=document.createElement('tr');
+    row.innerHTML=`<td>${index+1}</td><td>${member.name}</td><td>${member.code}</td>
+    <td><button class="delete-btn" onclick="deleteMember(${index})">Delete</button></td>`;
+    tableBody.appendChild(row);
+  });
+}
+
+function deleteMember(index){
+  if(confirm("Are you sure you want to delete this member?")){
+    members.splice(index,1);
+    renderTable();
+    localStorage.setItem(`members_${adminCode}`, JSON.stringify(members));
+  }
+}
+
+addBtn.addEventListener('click',()=>{
+  const name=nameInput.value.trim();
+  const code=codeInput.value.trim();
+  if(!name || !code){alert("Enter both name and code!"); return;}
+  members.push({name, code});
+  renderTable();
+  nameInput.value=''; codeInput.value='';
+});
+
+saveBtn.addEventListener('click',()=>{
+  localStorage.setItem(`members_${adminCode}`, JSON.stringify(members));
+  alert("Member list saved!");
+});
+
+document.getElementById('startBtn').addEventListener('click',()=>{
+  localStorage.setItem('electionIsLive','true');
+  alert("Election started! Members can now vote.");
+});
+
+document.getElementById('stopBtn').addEventListener('click',()=>{
+  localStorage.setItem('electionIsLive','false');
+  alert("Election stopped! Members can no longer vote.");
+});
+
+renderTable();
+</script>
+</body>
+</html>

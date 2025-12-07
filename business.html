@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voterwa – Select Role</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center;}
+h1{font-size:2.8rem;margin-bottom:40px;text-shadow:1px 1px 5px rgba(0,0,0,0.7);}
+.role-container{display:flex;gap:60px;flex-wrap:wrap;justify-content:center;margin-bottom:30px;}
+.role-card{cursor:pointer;border:5px solid transparent;border-radius:50%;padding:8px;width:180px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:border-color 0.3s,box-shadow 0.3s;background:rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.3);}
+.role-card:hover{border-color:#00bfff;box-shadow:0 0 20px #00bfff;}
+.role-card.selected{border-color:#00ffff;box-shadow:0 0 25px #00ffff;}
+.role-image{width:100px;height:100px;border-radius:50%;border:5px solid #007bff;margin-bottom:15px;object-fit:cover;box-shadow:0 0 10px rgba(0,123,255,0.8);}
+.role-name{font-size:1.5rem;font-weight:bold;}
+#id-section{display:none;flex-direction:column;align-items:center;margin-top:20px;}
+#user-id-input{padding:12px;font-size:1.1rem;border:none;border-radius:8px;width:250px;margin-bottom:20px;}
+#continue-btn{padding:15px 50px;font-size:1.2rem;background-color:#007bff;border:none;border-radius:12px;color:white;cursor:pointer;}
+@media(max-width:500px){.role-container{flex-direction:column;gap:40px;}}
+</style>
+</head>
+<body>
+
+<h1>Voterwa – Select Your Role</h1>
+
+<div class="role-container">
+  <div class="role-card" data-role="admin" tabindex="0">
+    <img src="images/admin emoji.jpg" alt="Admin" class="role-image"/>
+    <div class="role-name">Admin</div>
+  </div>
+  <div class="role-card" data-role="member" tabindex="0">
+    <img src="images/member emoji.jpg.webp" alt="Member" class="role-image"/>
+    <div class="role-name">Member</div>
+  </div>
+</div>
+
+<div id="id-section">
+  <input type="text" id="user-id-input" placeholder="Enter your username or code..." />
+  <button id="continue-btn">Continue</button>
+</div>
+
+<script>
+const roleCards=document.querySelectorAll('.role-card');
+const idSection=document.getElementById('id-section');
+const continueBtn=document.getElementById('continue-btn');
+const userIdInput=document.getElementById('user-id-input');
+let selectedRole=null;
+
+roleCards.forEach(card=>{
+  card.addEventListener('click',()=>{
+    roleCards.forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedRole=card.dataset.role;
+    idSection.style.display='flex';
+    userIdInput.focus();
+  });
+});
+
+continueBtn.addEventListener('click',()=>{
+  const userId=userIdInput.value.trim();
+  if(!selectedRole || !userId){alert("Please select role and enter ID."); return;}
+
+  if(selectedRole==='admin'){
+    // Accept predefined admin codes
+    const validAdmins = ['severien','benjamin'];
+    if(validAdmins.includes(userId)){
+      localStorage.setItem('role','admin');
+      localStorage.setItem('userId',userId);
+      window.location.href='admin_dashboard.html';
+    }else{
+      alert("Invalid admin code!");
+    }
+  }else{
+    // Check member exists for any admin
+    let found=false;
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('members_')){
+        const mems = JSON.parse(localStorage.getItem(k));
+        if(mems.find(m=>m.code===userId)) found=true;
+      }
+    });
+    if(found){
+      localStorage.setItem('role','member');
+      localStorage.setItem('userId',userId);
+      window.location.href='member_vote.html';
+    }else alert("You are not registered in any cooperative.");
+  }
+});
+</script>
+
+</body>
+</html>

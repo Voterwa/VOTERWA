@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Settings – Voterwa</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(to right,#0f2027,#203a43,#2c5364);color:white;padding:20px 40px;}
+h1{text-align:center;margin-bottom:40px;font-size:2.5rem;text-shadow:0 0 10px rgba(0,0,0,0.7);}
+section{background:rgba(255,255,255,0.1);border-radius:15px;padding:25px 30px;margin-bottom:30px;box-shadow:0 6px 20px rgba(0,0,0,0.6);}
+h2{margin-top:0;margin-bottom:20px;color:#00d1ff;}
+label{display:block;margin-bottom:8px;font-weight:bold;}
+input, select{width:100%;padding:8px 12px;border-radius:8px;border:none;margin-bottom:15px;}
+button{background-color:#007bff;color:white;border:none;padding:12px 25px;border-radius:12px;font-size:1.1rem;cursor:pointer;margin-top:10px;}
+button:hover{background-color:#0056b3;}
+ul{list-style:none;padding:0;max-height:150px;overflow-y:auto;background:rgba(0,0,0,0.2);border-radius:8px;}
+li{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;}
+.delete-btn{background:#ff4c4c;border:none;color:white;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:0.9rem;}
+.delete-btn:hover{background:#d93636;}
+</style>
+</head>
+<body>
+
+<h1>Admin Settings</h1>
+
+<section>
+<h2>Manage Positions</h2>
+<input type="text" id="position-name" placeholder="New Position"/>
+<button id="add-position-btn">Add Position</button>
+<ul id="positions-list"></ul>
+</section>
+
+<section>
+<h2>Manage Candidates</h2>
+<input type="text" id="candidate-name" placeholder="Candidate Name"/>
+<select id="candidate-position"></select>
+<button id="add-candidate-btn">Add Candidate</button>
+<ul id="candidates-list"></ul>
+</section>
+
+<section>
+<label><input type="checkbox" id="election-live-toggle"/> Election is Live</label>
+</section>
+
+<button id="save-settings-btn">Save All</button>
+<div id="message"></div>
+
+<script>
+let positions=JSON.parse(localStorage.getItem('positions'))||[];
+let candidates=JSON.parse(localStorage.getItem('candidates'))||[];
+
+const posInput=document.getElementById('position-name');
+const addPosBtn=document.getElementById('add-position-btn');
+const posList=document.getElementById('positions-list');
+const candInput=document.getElementById('candidate-name');
+const candPosSelect=document.getElementById('candidate-position');
+const addCandBtn=document.getElementById('add-candidate-btn');
+const candList=document.getElementById('candidates-list');
+const electionToggle=document.getElementById('election-live-toggle');
+const saveBtn=document.getElementById('save-settings-btn');
+const msgDiv=document.getElementById('message');
+
+function renderPositions(){
+  posList.innerHTML=''; candPosSelect.innerHTML='<option value="">--Select--</option>';
+  positions.forEach((pos,i)=>{
+    const li=document.createElement('li'); li.textContent=pos;
+    const del=document.createElement('button'); del.textContent='Delete'; del.className='delete-btn';
+    del.onclick=()=>{positions.splice(i,1); candidates=candidates.filter(c=>c.position!==pos); renderPositions(); renderCandidates();}
+    li.appendChild(del); posList.appendChild(li);
+
+    const opt=document.createElement('option'); opt.value=pos; opt.textContent=pos; candPosSelect.appendChild(opt);
+  });
+}
+
+function renderCandidates(){
+  candList.innerHTML='';
+  candidates.forEach((c,i)=>{
+    const li=document.createElement('li');
+    li.textContent=`${c.name} — ${c.position}`;
+    const del=document.createElement('button'); del.textContent='Delete'; del.className='delete-btn';
+    del.onclick=()=>{candidates.splice(i,1); renderCandidates();}
+    li.appendChild(del); candList.appendChild(li);
+  });
+}
+
+addPosBtn.onclick=(e)=>{e.preventDefault(); const val=posInput.value.trim(); if(val&&!positions.includes(val)){positions.push(val); posInput.value=''; renderPositions();}}
+addCandBtn.onclick=(e)=>{e.preventDefault(); const name=candInput.value.trim(); const pos=candPosSelect.value; if(name&&pos){candidates.push({name,position:pos}); candInput.value=''; candPosSelect.value=''; renderCandidates();}}
+
+saveBtn.onclick=()=>{localStorage.setItem('positions',JSON.stringify(positions)); localStorage.setItem('candidates',JSON.stringify(candidates)); localStorage.setItem('electionIsLive',electionToggle.checked); msgDiv.style.color='#00ff7f'; msgDiv.textContent='Settings saved!';}
+
+window.addEventListener('DOMContentLoaded',()=>{renderPositions(); renderCandidates(); electionToggle.checked=localStorage.getItem('electionIsLive')==='true';});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard – Voterwa</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;min-height:100vh;padding:40px 20px;}
+h1{text-align:center;font-size:2.5rem;margin-bottom:30px;text-shadow:1px 1px 5px rgba(0,0,0,0.7);}
+.data-section{max-width:800px;margin:0 auto;background:rgba(255,255,255,0.1);padding:30px;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,0.5);}
+h2{margin-top:0;color:#00d1ff;}
+ul{list-style:none;padding-left:0;}
+button{padding:10px 20px;font-size:1rem;border:none;border-radius:8px;color:white;cursor:pointer;margin-top:20px;margin-right:10px;}
+#createMembersBtn{background:#007bff;}
+#createMembersBtn:hover{background:#00bfff;}
+#createCandidatesBtn{background:#00ff99;color:black;}
+#createCandidatesBtn:hover{background:#66ffcc;}
+#viewResultsBtn{background:#ffcc00;color:black;}
+#viewResultsBtn:hover{background:#ffee33;}
+</style>
+</head>
+<body>
+
+<h1 id="welcomeText"></h1>
+
+<div class="data-section">
+  <h2>Members:</h2>
+  <ul id="membersList"></ul>
+
+  <h2>Candidates:</h2>
+  <ul id="candidatesList"></ul>
+
+  <div style="margin-top:20px;">
+    <button id="createMembersBtn">Members</button>
+    <button id="createCandidatesBtn">Create Candidates</button>
+    <button id="viewResultsBtn">View Results</button>
+    <button onclick="logout()" style="background-color: #007bff;">Logout</button>
+  </div>
+</div>
+
+<script>
+const role=localStorage.getItem('role');
+const userId=localStorage.getItem('userId');
+if(role!=='admin' || !userId){alert("Access denied!"); window.location.href='index.html';}
+
+// Load members and candidates
+let members=JSON.parse(localStorage.getItem(`members_${userId}`))||[];
+let candidates=JSON.parse(localStorage.getItem(`candidates_${userId}`))||[];
+
+// Display welcome
+document.getElementById("welcomeText").innerText=`Welcome Admin ${userId}`;
+
+// Render members
+function renderMembers(){
+  const membersList=document.getElementById("membersList");
+  membersList.innerHTML='';
+  members.forEach((m,i)=>{
+    const li=document.createElement('li');
+    li.innerText=`${i+1}. ${m.name} (${m.code})`;
+    membersList.appendChild(li);
+  });
+}
+renderMembers();
+
+// Render candidates
+function renderCandidates(){
+  const candidatesList=document.getElementById("candidatesList");
+  candidatesList.innerHTML='';
+  candidates.forEach((c,i)=>{
+    const li=document.createElement('li');
+    li.innerText=`${i+1}. ${c.name}`;
+    candidatesList.appendChild(li);
+  });
+}
+renderCandidates();
+
+function logout(){
+  localStorage.removeItem('role'); localStorage.removeItem('userId'); window.location.href='index.html';
+}
+
+// Buttons
+document.getElementById("createMembersBtn").addEventListener('click',()=>{
+  localStorage.setItem('adminCode', userId);
+  window.location.href='create_coperative_members.html';
+});
+document.getElementById("createCandidatesBtn").addEventListener('click',()=>{
+  localStorage.setItem('adminCode', userId);
+  window.location.href='votadmin_manage_candidates.html';
+});
+document.getElementById("viewResultsBtn").addEventListener('click',()=>{
+  localStorage.setItem('adminCode', userId);
+  window.location.href='votadmin_view_votes.html';
+});
+
+// Update members if changed
+window.addEventListener('storage', (e)=>{
+  if(e.key===`members_${userId}`) members=JSON.parse(localStorage.getItem(`members_${userId}`))||[];
+  renderMembers();
+});
+</script>
+</body>
+</html>

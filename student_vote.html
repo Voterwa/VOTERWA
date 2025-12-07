@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+  <meta charset="UTF-8">
+  <title>Student Voting Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f7fa; margin: 0; }
+    header { background: #003366; color: white; padding: 20px; text-align: center; font-size: 1.8rem; position: relative; }
+    header .results-btn { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); }
+    header .results-btn img { width: 40px; height: 40px; cursor: pointer; border-radius: 50%; }
+    .container { display: flex; justify-content: space-between; padding: 20px; gap: 20px; flex-wrap: wrap; }
+    .panel { background: white; flex: 1; min-width: 300px; padding: 20px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #003366; }
+    select { width: 100%; padding: 10px; margin-bottom: 15px; font-size: 1rem; }
+    .candidate { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; }
+    .candidate img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+    .vote-btn { margin-left: auto; padding: 5px 10px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .vote-btn:disabled { background-color: gray; cursor: not-allowed; }
+    .admin-message { background: white; padding: 20px; margin: 20px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    .admin-message h3 { margin-top: 0; color: #cc0000; }
+    .empty-note { font-style: italic; color: gray; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    Welcome to Student Voting Portal
+    <a href="school-results.html" class="results-btn">
+      <img src="stock-vector-happy-yellow-ball-covering-eyes-and-peeking-waiting-for-a-surprise-2223811985.jpg" alt="Go to Results">
+    </a>
+  </header>
+
+  <div class="container">
+    <div class="panel">
+      <h2>Vote for Male Candidates</h2>
+      <select id="male-select"></select>
+      <div id="male-candidates"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Vote for Female Candidates</h2>
+      <select id="female-select"></select>
+      <div id="female-candidates"></div>
+    </div>
+  </div>
+
+  <div class="admin-message">
+    <h3>📢 Message from Admin:</h3>
+    <p id="admin-message"></p>
+  </div>
+
+  <script>
+    /* ---------- helpers ---------- */
+    function getDB(){ return JSON.parse(localStorage.getItem('voterwaDB') || '{"schools":[]}'); }
+    function setDB(db){ localStorage.setItem('voterwaDB', JSON.stringify(db)); }
+    function getActive(){ return JSON.parse(localStorage.getItem('activeSession')||'null'); }
+    function getSchoolObj(){
+      const active = getActive(); if(!active){ alert('Please login'); location.href='choose-role.html'; return null; }
+      const db = getDB();
+      const school = db.schools.find(s => s.schoolCode === active.schoolCode);
+      if(!school){ alert('School not found'); location.href='choose-role.html'; return null; }
+      return { db, school, active };
+    }
+
+    let lastCandidatesState = '';
+
+    function isMaleCategory(category){
+      return category.toLowerCase().includes('boy') || category.toLowerCase().includes('male') || category.toLowerCase().includes('male') || category.toLowerCase().includes('male');
+    }
+    function isFemaleCategory(category){
+      return category.toLowerCase().includes('girl') || category.toLowerCase().includes('female');
+    }
+
+    function populateCategories(){
+      const s = getSchoolObj(); if(!s) return;
+      const candidates = s.school.settings.candidates || {};
+      const customCats = s.school.settings.customCategories || {};
+
+      const maleSelect = document.getElementById('male-select');
+      const femaleSelect = document.getElementById('female-select');
+
+      const maleSelected = maleSelect.value;
+      const femaleSelected = femaleSelect.value;
+
+      maleSelect.innerHTML='';
+      femaleSelect.innerHTML='';
+
+      const maleCategories = [...(customCats.left||[]), ...Object.keys(candidates).filter(c=>isMaleCategory(c) && !(customCats.left||[]).includes(c))];
+      const femaleCategories = [...(customCats.right||[]), ...Object.keys(candidates).filter(c=>isFemaleCategory(c) && !(customCats.right||[]).includes(c))];
+
+      let hasMale=false, hasFemale=false;
+
+      maleCategories.forEach(cat=>{
+        maleSelect.appendChild(new Option(cat,cat));
+        hasMale=true;
+      });
+      femaleCategories.forEach(cat=>{
+        femaleSelect.appendChild(new Option(cat,cat));
+        hasFemale=true;
+      });
+
+      if(hasMale && candidates[maleSelected]) maleSelect.value = maleSelected;
+      if(hasFemale && candidates[femaleSelected]) femaleSelect.value = femaleSelected;
+
+      if(!hasMale) document.getElementById('male-candidates').innerHTML="<p class='empty-note'>No male categories available.</p>";
+      else loadCandidates(maleSelect.value,'male-candidates');
+
+      if(!hasFemale) document.getElementById('female-candidates').innerHTML="<p class='empty-note'>No female categories available.</p>";
+      else loadCandidates(femaleSelect.value,'female-candidates');
+    }
+
+    function loadCandidates(category, containerId){
+      const s = getSchoolObj(); if(!s) return;
+      const candidates = s.school.settings.candidates || {};
+      const container = document.getElementById(containerId);
+      container.innerHTML='';
+      if(!candidates[category] || candidates[category].length===0){
+        container.innerHTML="<p class='empty-note'>No candidates yet.</p>";
+        return;
+      }
+      candidates[category].forEach(c=>{
+        const div = document.createElement('div');
+        div.className='candidate';
+        const fullName = `${c.first||''}${c.last?(' '+c.last):''}`;
+        div.innerHTML=`
+          <img src="${c.img||''}" alt="${c.first||''}" onerror="this.style.display='none'">
+          <div><strong>${fullName}</strong></div>
+          <button class="vote-btn" id="vote_${c.id}" onclick="vote('${c.id}','${category}','${fullName}')">Vote</button>
+        `;
+        container.appendChild(div);
+      });
+      checkElectionStatus(); // will disable if needed
+      checkIfAlreadyVoted();
+    }
+
+    function vote(candidateId, category, fullName){
+      const s = getSchoolObj(); if(!s) return;
+      const activeStudent = s.active.userCode;
+      const settings = s.school.settings;
+
+      // checks
+      if((settings.electionStatus || 'stopped') !== 'started'){
+        alert('Election is not running.');
+        checkElectionStatus();
+        return;
+      }
+
+      const allowed = settings.allowedVoters || [];
+      if(!allowed.includes(activeStudent)){
+        alert('You are not allowed to vote in this election.');
+        checkElectionStatus();
+        return;
+      }
+
+      // init
+      settings.votes = settings.votes || {};
+      settings.votedStudents = settings.votedStudents || {};
+
+      // has this student already voted in this category?
+      const studentVotes = settings.votedStudents[activeStudent] || [];
+      if(studentVotes.includes(category)){
+        alert('You have already voted in this category.');
+        checkIfAlreadyVoted();
+        return;
+      }
+
+      // increment votes
+      settings.votes[candidateId] = (settings.votes[candidateId] || 0) + 1;
+      // mark that this student voted in this category
+      studentVotes.push(category);
+      settings.votedStudents[activeStudent] = studentVotes;
+
+      // save
+      s.db.schools = s.db.schools.map(sc => sc.schoolCode === s.school.schoolCode ? s.school : sc);
+      setDB(s.db);
+
+      alert("✅ Vote recorded successfully!");
+      // refresh UI
+      loadCandidates(category, isMaleCategory(category)?'male-candidates':'female-candidates');
+    }
+
+    document.getElementById('male-select').addEventListener('change', e=>{
+      loadCandidates(e.target.value,'male-candidates');
+    });
+    document.getElementById('female-select').addEventListener('change', e=>{
+      loadCandidates(e.target.value,'female-candidates');
+    });
+
+    function checkElectionStatus(){
+      const s = getSchoolObj(); if(!s) return;
+      const status = s.school.settings.electionStatus || 'stopped';
+      if(status !== 'started') {
+        document.querySelectorAll('.vote-btn').forEach(btn => btn.disabled = true);
+      } else {
+        // set disabled false here, but next checks may disable specific buttons
+        document.querySelectorAll('.vote-btn').forEach(btn => btn.disabled = false);
+      }
+    }
+
+    function checkIfAlreadyVoted(){
+      const s = getSchoolObj(); if(!s) return;
+      const activeStudent = s.active.userCode;
+      const settings = s.school.settings || {};
+      const studentVotes = (settings.votedStudents && settings.votedStudents[activeStudent]) || [];
+      // disable vote buttons per category if student already voted in that category
+      // We will scan all categories and disable buttons for candidates of categories voted
+      const candidates = settings.candidates || {};
+      for(const cat in candidates){
+        if(studentVotes.includes(cat)){
+          // disable buttons in that category
+          candidates[cat].forEach(c => {
+            const btn = document.getElementById('vote_' + c.id);
+            if(btn) btn.disabled = true;
+          });
+        } else {
+          candidates[cat].forEach(c => {
+            const btn = document.getElementById('vote_' + c.id);
+            if(btn) {
+              // only enable if election running and student allowed
+              const enabled = (settings.electionStatus === 'started') && (settings.allowedVoters||[]).includes(activeStudent);
+              btn.disabled = !enabled;
+            }
+          });
+        }
+      }
+    }
+
+    document.getElementById('admin-message').textContent = (function(){
+      const s = getSchoolObj();
+      if(!s) return "Please login to see admin message.";
+      return s.school.settings.adminMessage || "No message from admin.";
+    })();
+
+    // Monitor teacher changes
+    setInterval(()=>{
+      const s = getSchoolObj();
+      if(!s) return;
+      const currentState = JSON.stringify(s.school.settings.candidates || {});
+      if(currentState !== lastCandidatesState){
+        populateCategories();
+        lastCandidatesState = currentState;
+      }
+      // also update admin message and checks
+      document.getElementById('admin-message').textContent = s.school.settings.adminMessage || "No message from admin.";
+      checkElectionStatus();
+      checkIfAlreadyVoted();
+    },1000);
+
+    // Initial load
+    populateCategories();
+  </script>
+
+</body>
+</html>

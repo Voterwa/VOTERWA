@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Presidential Candidates - Voterwa</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(to bottom, #001f3f, #001933);
+  color: white;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
+  text-shadow: 1px 1px 4px black;
+}
+
+/* Candidate horizontal scroll */
+.candidate-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 20px;
+  padding: 10px;
+  margin-bottom: 40px;
+}
+
+.candidate-card {
+  flex: 0 0 auto;
+  background-color: #004080;
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 250px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.3s;
+  position: relative;
+}
+.candidate-card:hover {
+  transform: scale(1.05);
+}
+
+.candidate-card input[type="radio"] {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  transform: scale(1.5);
+  cursor: pointer;
+}
+
+.candidate-card img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 2px solid white;
+}
+
+.candidate-card h3 {
+  margin: 10px 0 5px;
+}
+
+/* Table section */
+.party-section {
+  background-color: indigo;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+th, td {
+  border-bottom: 1px solid #ccc;
+  padding: 12px;
+  text-align: center;
+}
+
+th {
+  background-color: #4b0082;
+}
+
+input[type="radio"] {
+  transform: scale(1.5);
+  accent-color: yellow;
+  cursor: pointer;
+}
+
+#submit-btn {
+  margin-top: 30px;
+  background-color: #28a745;
+  color: white;
+  font-size: 1.2rem;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#submit-btn:hover {
+  background-color: #218838;
+}
+
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+  background-color: #002244;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  color: white;
+  box-shadow: 0 0 15px 5px #000;
+  position: relative;
+  text-align: center;
+}
+
+.modal-content img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 15px;
+  border: 3px solid #00aaff;
+}
+
+.modal-content h2 {
+  margin: 0 0 10px;
+}
+
+.modal-content p {
+  text-align: left;
+  line-height: 1.5;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #00aaff;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div id="navbar-container"></div>
+
+<script>
+fetch("navbar.html")
+.then(res => res.text())
+.then(data => {
+  document.getElementById("navbar-container").innerHTML = data;
+});
+</script>
+
+<h1>Presidential Candidates</h1>
+
+<div class="candidate-scroll">
+  <div class="candidate-card" data-name="John Doe" data-party="Unity Party" data-photo="images/candidate1.jpg" data-info="John Doe is a seasoned politician...">
+    <input type="radio" name="president" value="John Doe">
+    <img src="images/candidate1.jpg" alt="John Doe" />
+    <h3>John Doe</h3>
+    <p>Unity Party</p>
+  </div>
+
+  <div class="candidate-card" data-name="Jane Peace" data-party="Democracy Front" data-photo="images/candidate2.jpg" data-info="Jane Peace is known for her strong stance...">
+    <input type="radio" name="president" value="Jane Peace">
+    <img src="images/candidate2.jpg" alt="Jane Peace" />
+    <h3>Jane Peace</h3>
+    <p>Democracy Front</p>
+  </div>
+
+  <div class="candidate-card" data-name="Alex Hope" data-party="Independent" data-photo="images/candidate3.jpg" data-info="Alex Hope focuses on social issues...">
+    <input type="radio" name="president" value="Alex Hope">
+    <img src="images/candidate3.jpg" alt="Alex Hope" />
+    <h3>Alex Hope</h3>
+    <p>Independent</p>
+  </div>
+</div>
+
+<div class="party-section">
+<h2 style="text-align:center; margin-bottom: 20px;">Choose Your Party</h2>
+<form id="partyForm">
+  <table>
+    <thead>
+      <tr>
+        <th>Logo</th>
+        <th>Party Name</th>
+        <th>Candidate</th>
+        <th>Vote</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><img src="images/logo1.png" width="40" alt="Unity Party Logo" /></td>
+        <td>Unity Party</td>
+        <td>John Doe</td>
+        <td><input type="radio" name="party" value="Unity Party" /></td>
+      </tr>
+      <tr>
+        <td><img src="images/logo2.png" width="40" alt="Democracy Front Logo" /></td>
+        <td>Democracy Front</td>
+        <td>Jane Peace</td>
+        <td><input type="radio" name="party" value="Democracy Front" /></td>
+      </tr>
+      <tr>
+        <td><img src="images/logo3.png" width="40" alt="Independent Logo" /></td>
+        <td>Independent</td>
+        <td>Alex Hope</td>
+        <td><input type="radio" name="party" value="Independent" /></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="text-align:center;">
+    <button id="submit-btn" type="submit">Submit Vote</button>
+  </div>
+</form>
+</div>
+
+<!-- Modal HTML -->
+<div id="candidateModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" id="modalClose">&times;</span>
+    <img id="modalPhoto" src="" alt="Candidate Photo" />
+    <h2 id="modalName"></h2>
+    <h4 id="modalParty"></h4>
+    <p id="modalInfo"></p>
+  </div>
+</div>
+
+<script>
+const modal = document.getElementById('candidateModal');
+const modalPhoto = document.getElementById('modalPhoto');
+const modalName = document.getElementById('modalName');
+const modalParty = document.getElementById('modalParty');
+const modalInfo = document.getElementById('modalInfo');
+const modalClose = document.getElementById('modalClose');
+
+document.querySelectorAll('.candidate-card').forEach(card => {
+  card.addEventListener('click', () => {
+    modalPhoto.src = card.dataset.photo;
+    modalName.textContent = card.dataset.name;
+    modalParty.textContent = card.dataset.party;
+    modalInfo.textContent = card.dataset.info;
+    modal.style.display = 'block';
+    card.querySelector('input[type="radio"]').checked = true;
+  });
+});
+
+modalClose.addEventListener('click', () => { modal.style.display = 'none'; });
+window.addEventListener('click', e => { if(e.target===modal) modal.style.display='none'; });
+
+const currentId = localStorage.getItem("nationalId"); 
+if (!currentId) {
+  alert("No valid ID found. Please verify your ID first.");
+  window.location.href = "id_verification.html";
+}
+
+if (localStorage.getItem(`vote_done_${currentId}_details`)) {
+  alert("You have already voted. Double voting is not allowed!");
+  document.getElementById("submit-btn").disabled = true;
+  document.getElementById("submit-btn").style.backgroundColor = "gray";
+}
+
+document.getElementById("partyForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  if (localStorage.getItem(`vote_done_${currentId}_details`)) {
+    alert("You already voted!");
+    return;
+  }
+
+  const chosenParty = document.querySelector('input[name="party"]:checked');
+  const chosenCandidate = document.querySelector('input[name="president"]:checked');
+
+  if (!chosenParty || !chosenCandidate) {
+    alert("Please select a candidate and a party before submitting.");
+    return;
+  }
+
+  const voteData = {
+    candidate: chosenCandidate.value,
+    party: chosenParty.value
+  };
+  localStorage.setItem(`vote_done_${currentId}_details`, JSON.stringify(voteData));
+
+  alert("Your vote has been submitted successfully!");
+  document.getElementById("submit-btn").disabled = true;
+  document.getElementById("submit-btn").style.backgroundColor = "gray";
+});
+</script>
+</body>
+</html>

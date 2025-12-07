@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard - Voterwa</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#4a08c4; }
+    header { background:#063970; color:white; text-align:center; padding:1rem; font-size:1.5rem; position:relative; }
+    .dashboard { display:flex; justify-content:space-around; flex-wrap:wrap; padding:1rem; }
+    .section { background:rgb(154, 120, 240); border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); padding:1rem; margin:1rem; width:40%; min-width:300px; }
+    .category-control { display:flex; gap:10px; align-items:center; margin-bottom:0.5rem; }
+    select { font-size:1rem; flex-grow:1; padding:0.5rem; }
+    .plus-btn { font-size:1.2rem; background:none; border:none; color:green; cursor:pointer; }
+    .candidate { display:inline-block; margin:0.5rem; text-align:center; position:relative; }
+    .candidate img { width:80px; height:80px; border-radius:50%; object-fit:cover; cursor:pointer; }
+    .candidate input { display:block; margin-top:0.2rem; }
+    .delete-btn { position:absolute; top:-5px; right:-5px; color:red; cursor:pointer; font-weight:bold; }
+    .add-btn { font-size:24px; background:none; border:none; color:green; cursor:pointer; }
+    textarea { width:95%; height:100px; margin:1rem auto; display:block; border-radius:6px; padding:0.5rem; }
+    button.save { display:block; margin:1rem auto; padding:0.5rem 1rem; background:#063970; color:white; border:none; border-radius:5px; cursor:pointer; }
+    button.control-btn { display:block; margin:10px auto; padding:0.5rem 1rem; background:#006600; color:white; border:none; border-radius:5px; cursor:pointer; }
+    button.reset-btn { display:block; margin:10px auto; padding:0.5rem 1rem; background:#cc0000; color:white; border:none; border-radius:5px; cursor:pointer; }
+    .settings-icon { position:absolute; right:1rem; top:50%; transform:translateY(-50%); cursor:pointer; font-size:1.5rem; }
+  </style>
+</head>
+<body>
+  
+<header>
+  Teacher Dashboard
+  <span class="settings-icon" title="Voting Settings" onclick="location.href='voting-settings.html'">⚙️</span>
+</header>
+
+<div class="dashboard">
+  <div class="section">
+    <div class="category-control">
+      <select id="leftCategory" onchange="restoreCandidates('left')"></select>
+      <button class="plus-btn" onclick="addNewCategory('left')">➕</button>
+    </div>
+    <div id="leftCandidates"></div>
+    <div style="text-align:center">
+      <button class="add-btn" onclick="addCandidate('leftCandidates')">➕</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="category-control">
+      <select id="rightCategory" onchange="restoreCandidates('right')"></select>
+      <button class="plus-btn" onclick="addNewCategory('right')">➕</button>
+    </div>
+    <div id="rightCandidates"></div>
+    <div style="text-align:center">
+      <button class="add-btn" onclick="addCandidate('rightCandidates')">➕</button>
+    </div>
+  </div>
+</div>
+
+<textarea id="infoBox" placeholder="Information about all candidates..."></textarea>
+<button class="save" onclick="saveChanges()">Save Changes</button>
+<button class="control-btn" onclick="startElection()">Start Election</button>
+<button class="control-btn" onclick="stopElection()">Stop Election</button>
+<button class="reset-btn" onclick="resetData()">Reset Election Data</button>
+
+<script>
+/* ---------- Utilities: DB & active session helpers ---------- */
+function getDB(){ return JSON.parse(localStorage.getItem('voterwaDB') || '{"schools":[]}'); }
+function setDB(db){ localStorage.setItem('voterwaDB', JSON.stringify(db)); }
+function getActive(){ return JSON.parse(localStorage.getItem('activeSession')||'null'); }
+function saveActive(a){ localStorage.setItem('activeSession', JSON.stringify(a)); }
+
+function getSchoolObj(){
+  const active = getActive();
+  if(!active) { alert('No active session — please login.'); window.location.href='choose-role.html'; return null; }
+  const db = getDB();
+  const school = db.schools.find(s => s.schoolCode === active.schoolCode);
+  if(!school){ alert('School not found in DB.'); window.location.href='choose-role.html'; return null; }
+  return { db, school };
+}
+
+/* ---------- Map teacher UI storage to per-school settings ---------- */
+const defaultCategories = { left:["HEADBOY","VICEHEADBOY"], right:["HEADGIRL","VICEHEADGIRL"] };
+
+function loadCategories(){
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+  const saved = school.settings.customCategories || {};
+  const leftList = saved.left || defaultCategories.left;
+  const rightList = saved.right || defaultCategories.right;
+
+  const leftSelect = document.getElementById('leftCategory');
+  const rightSelect = document.getElementById('rightCategory');
+
+  leftSelect.innerHTML = "";
+  rightSelect.innerHTML = "";
+
+  leftList.forEach(cat=>leftSelect.appendChild(new Option(cat,cat)));
+  rightList.forEach(cat=>rightSelect.appendChild(new Option(cat,cat)));
+
+  // ensure categories exist in candidates object
+  school.settings.candidates = school.settings.candidates || {};
+  leftList.forEach(cat=>{ if(!school.settings.candidates[cat]) school.settings.candidates[cat]=[] });
+  rightList.forEach(cat=>{ if(!school.settings.candidates[cat]) school.settings.candidates[cat]=[] });
+
+  setDB(db);
+}
+
+function saveCustomCategories(left,right){
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+  school.settings.customCategories = { left, right };
+  setDB(db);
+}
+
+function addNewCategory(side){
+  const name = prompt("Enter new category name:");
+  if(!name || name.trim()==="") return;
+  const select = document.getElementById(side==='left'?'leftCategory':'rightCategory');
+  const newOption = new Option(name,name);
+  select.appendChild(newOption);
+  select.value = name;
+
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+  const saved = school.settings.customCategories || {};
+  const list = saved[side] || defaultCategories[side];
+  if(!list.includes(name)) list.push(name);
+  saved[side] = list;
+  school.settings.customCategories = saved;
+  school.settings.candidates = school.settings.candidates || {};
+  if(!school.settings.candidates[name]) school.settings.candidates[name] = [];
+  setDB(db);
+  restoreCandidates(side);
+}
+
+function uploadImage(imgElement){
+  const input = document.createElement("input");
+  input.type="file";
+  input.accept="image/*";
+  input.onchange = ()=> {
+    const file = input.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = ()=> {
+        imgElement.src = reader.result;
+        imgElement.dataset.image = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+}
+
+function addCandidate(sectionId){
+  const container = document.getElementById(sectionId);
+  const div = document.createElement("div");
+  div.className = "candidate";
+  div.dataset.id = Date.now() + Math.random().toString(36).substr(2,5); 
+  div.innerHTML = `
+    <img ondblclick="uploadImage(this)" src="https://via.placeholder.com/80?text=+" alt="Candidate" />
+    <input type="text" placeholder="Full name" />
+    <div class="delete-btn" onclick="this.parentElement.remove()">✖</div>
+  `;
+  container.appendChild(div);
+}
+
+// saveChanges adapted to school.settings.candidates and adminMessage
+function saveChanges() {
+  const leftCat = document.getElementById('leftCategory').value;
+  const rightCat = document.getElementById('rightCategory').value;
+  const infoText = document.getElementById('infoBox').value;
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+
+  const getCandidates = (sectionId) => {
+    const container = document.getElementById(sectionId);
+    const list = [];
+    container.querySelectorAll('.candidate').forEach(c => {
+      if(!c.dataset.id) c.dataset.id = Date.now() + Math.random().toString(36).substr(2,5);
+      const input = c.querySelector('input');
+      const img = c.querySelector('img');
+      const name = input ? input.value.trim() : "";
+      const [first, ...rest] = name.split(" ");
+      const imgSrc = img.dataset.image || img.src || "";
+
+      let finalImg = imgSrc;
+      if (imgSrc.startsWith("data:image") && imgSrc.length > 500000) finalImg = imgSrc.substring(0, 500000);
+
+      list.push({ id: c.dataset.id, first: first || "", last: rest.join(" ") || "", img: finalImg });
+    });
+    return list;
+  };
+
+  try {
+    school.settings.candidates = school.settings.candidates || {};
+    school.settings.candidates[leftCat] = getCandidates('leftCandidates');
+    school.settings.candidates[rightCat] = getCandidates('rightCandidates');
+    school.settings.adminMessage = infoText;
+    setDB(db);
+    alert("✅ Changes saved successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Error: Image too large. Try using smaller photos (less than 1MB).");
+  }
+}
+
+function restoreCandidates(side){
+  const select = document.getElementById(side==='left'?'leftCategory':'rightCategory');
+  const container = document.getElementById(side==='left'?'leftCandidates':'rightCandidates');
+  const res = getSchoolObj(); if(!res) return;
+  const { school } = res;
+  const candidates = school.settings.candidates || {};
+  const category = select.value;
+  if(!candidates[category]) candidates[category]=[];
+  school.settings.candidates = candidates;
+  localStorage.setItem('voterwaDB', JSON.stringify(getDB()));
+
+  container.innerHTML="";
+  candidates[category].forEach(c=>{
+    const div=document.createElement("div");
+    div.className="candidate";
+    div.dataset.id = c.id;
+    div.innerHTML=`
+      <img ondblclick="uploadImage(this)" src="${c.img}" data-image="${c.img}" alt="Candidate" />
+      <input type="text" value="${c.first} ${c.last}" />
+      <div class="delete-btn" onclick="this.parentElement.remove()">✖</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function startElection(){
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+  school.settings.electionStatus = 'started';
+  school.settings.adminMessage = document.getElementById('infoBox').value;
+  setDB(db);
+  alert("🟢 Election started!");
+}
+
+function stopElection(){
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+  school.settings.electionStatus = 'stopped';
+  school.settings.adminMessage = document.getElementById('infoBox').value;
+  setDB(db);
+  alert("🔴 Election stopped!");
+}
+
+function resetData(){
+  if(!confirm("⚠️ Are you sure you want to reset all election data for this school?")) return;
+  const res = getSchoolObj(); if(!res) return;
+  const { db, school } = res;
+  // reset only this school's settings (preserve teacher/student lists)
+  school.settings = {
+    electionStatus: "stopped",
+    allowedVoters: [],
+    adminMessage: "",
+    customCategories: defaultCategories,
+    candidates: {},
+    votes: {},
+    votedStudents: {}
+  };
+  setDB(db);
+  alert("♻️ Election data cleared for this school!");
+  location.reload();
+}
+
+window.onload=()=>{
+  // ensure active session - if missing redirect to choose-role
+  const active = JSON.parse(localStorage.getItem('activeSession')||'null');
+  if(!active) { alert('No active session. Please login.'); window.location.href='choose-role.html'; return; }
+
+  loadCategories();
+
+  // set info box with school admin message
+  const res = getSchoolObj(); if(!res) return;
+  const { school } = res;
+  document.getElementById('infoBox').value = (school.settings && school.settings.adminMessage) || "";
+
+  // populate candidates for the first selected categories
+  restoreCandidates('left');
+  restoreCandidates('right');
+};
+</script>
+
+</body>
+</html>

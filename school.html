@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Choose Role - School</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #00416A, #E4E5E6);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 40px;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.6);
+    }
+
+    .role-container {
+      display: flex;
+      gap: 60px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .role-card {
+      cursor: pointer;
+      border: 4px solid transparent;
+      border-radius: 50%;
+      padding: 10px;
+      width: 180px;
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .role-card:hover {
+      border-color: #FFD700;
+      box-shadow: 0 0 20px #FFD700;
+    }
+
+    .role-card.selected {
+      border-color: #00FFFF;
+      box-shadow: 0 0 25px #00FFFF;
+    }
+
+    .role-image {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 5px solid #00BFFF;
+      margin-bottom: 15px;
+      object-fit: cover;
+      box-shadow: 0 0 10px rgba(0, 191, 255, 0.8);
+    }
+
+    .role-name {
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+
+    #id-section {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    #user-id-input {
+      padding: 12px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      width: 250px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #continue-btn {
+      padding: 12px 40px;
+      font-size: 1.2rem;
+      background-color: #007bff;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #continue-btn:hover {
+      background-color: #0056b3;
+    }
+
+    @media (max-width: 500px) {
+      .role-container {
+        flex-direction: column;
+        gap: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Choose Your Role</h1>
+
+  <div class="role-container">
+    <div class="role-card" data-role="teacher" tabindex="0">
+      <img src="Images/admin emoji.jpg" alt="Teacher" class="role-image" />
+      <div class="role-name">Teacher</div>
+    </div>
+
+    <div class="role-card" data-role="student" tabindex="0">
+      <img src="Images/student emoji.jpg" alt="Student" class="role-image" />
+      <div class="role-name">Student</div>
+    </div>
+  </div>
+
+  <div id="id-section">
+    <input type="text" id="user-id-input" placeholder="Enter your ID..." />
+    <button id="continue-btn">Continue</button>
+  </div>
+
+  <script>
+    /* ---------- Helper: create sample DB if not present ---------- */
+    function ensureSampleDB() {
+      const key = 'voterwaDB';
+      if (localStorage.getItem(key)) return;
+
+      const db = {
+        schools: [
+          {
+            schoolCode: "SCH001",
+            schoolName: "es rugabano High School",
+            teachers: [
+              { code: "TCH001", name: "Mr. Alex", password: "tchpass2" },
+              { code: "TCH002", name: "Ms. Jane", password: "tchpass3" }
+            ],
+            students: [
+              { code: "STD001", name: "Dopebwoy", password: "stdpass1" },
+              { code: "STD002", name: "Moses", password: "stdpass2" },
+              { code: "STD003", name: "Aline", password: "stdpass3" },
+              { code: "STD004", name: "Chris", password: "stdpass4" }
+            ],
+            settings: {
+              electionStatus: "stopped", 
+              allowedVoters: ["STD001","STD003"], 
+              adminMessage: "Welcome to es rugabano High School election!",
+              customCategories: { left: ["HEADBOY","VICEHEADBOY"], right: ["HEADGIRL","VICEHEADGIRL"] },
+              candidates: {
+                HEADBOY: [
+                  { id: "c1", first: "John", last: "Doe", img: "" },
+                  { id: "c2", first: "Paul", last: "Smith", img: "" }
+                ],
+                VICEHEADBOY: [],
+                HEADGIRL: [
+                  { id: "c3", first: "Mary", last: "Anne", img: "" }
+                ],
+                VICEHEADGIRL: []
+              },
+              votes: {} , // candidateId -> count
+              votedStudents: {} // studentCode -> [categories]
+            }
+          },
+          {
+            schoolCode: "SCH002",
+            schoolName: "wisdom Future Academy",
+            teachers: [
+              { code: "TCH010", name: "Mr. Kamanzi", password: "tch10" }
+            ],
+            students: [
+              { code: "STD010", name: "Peace", password: "p1" },
+              { code: "STD011", name: "anita", password: "p2" },
+              { code: "STD012", name: "berwa", password: "p3" },
+              { code: "STD013", name: "cyusa", password: "p4" },
+              { code: "STD014", name: "rukundo", password: "p5" },
+              { code: "STD015", name: "isaro", password: "p6" },
+              { code: "STD016", name: "kaze", password: "p7" }
+             
+
+            ],
+            settings: {
+              electionStatus: "started",
+              allowedVoters: ["STD010"],
+              adminMessage: "Election running at wisdom Future Academy",
+              customCategories: { left: ["headboy"], right: [] },
+              candidates: {
+                HEADBOY: [
+                  { id: "c10", first: "cyusa", last: "", img: "" },
+                  { id: "c11", first: "kaze", last: "", img: "" }
+                ]
+              },
+              votes: { "c10": 5, "c11": 2 },
+              votedStudents: { "STD010": ["HEADBOY"] }
+            }
+          }
+        ]
+      };
+      localStorage.setItem(key, JSON.stringify(db));
+    }
+
+    function findUserInDB(id, role) {
+      const db = JSON.parse(localStorage.getItem('voterwaDB') || '{"schools":[]}');
+      for (const school of db.schools) {
+        if (role === 'teacher') {
+          const t = school.teachers.find(x => x.code === id);
+          if (t) return { role: 'teacher', schoolCode: school.schoolCode, schoolName: school.schoolName, user: t };
+        } else {
+          const s = school.students.find(x => x.code === id);
+          if (s) return { role: 'student', schoolCode: school.schoolCode, schoolName: school.schoolName, user: s };
+        }
+      }
+      return null;
+    }
+
+    /* ---------- UI interaction ---------- */
+    const roleCards = document.querySelectorAll('.role-card');
+    const idSection = document.getElementById('id-section');
+    const continueBtn = document.getElementById('continue-btn');
+    const userIdInput = document.getElementById('user-id-input');
+
+    let selectedRole = null;
+
+    // ensure DB exists
+    ensureSampleDB();
+
+    roleCards.forEach(card => {
+      card.addEventListener('click', () => {
+        roleCards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRole = card.dataset.role;
+        idSection.style.display = 'flex';
+        userIdInput.focus();
+      });
+
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          card.click();
+        }
+      });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      const userId = userIdInput.value.trim();
+      if (!selectedRole || !userId) {
+        alert("Please select your role and enter your ID.");
+        return;
+      }
+
+      // find user in DB
+      const found = findUserInDB(userId, selectedRole);
+      if (!found) {
+        alert("ID not found in any school. Make sure you typed the correct ID.");
+        return;
+      }
+
+      // set active session (school-specific)
+      const activeSession = {
+        role: found.role,
+        schoolCode: found.schoolCode,
+        schoolName: found.schoolName,
+        userCode: userId
+      };
+      localStorage.setItem('activeSession', JSON.stringify(activeSession));
+
+      if (found.role === 'teacher') {
+        window.location.href = "teacher-dashboard.html";
+      } else {
+        window.location.href = "student_vote.html";
+      }
+    });
+
+    // optional: allow pressing Enter in input to continue
+    userIdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') continueBtn.click();
+    });
+  </script>
+
+</body>
+</html>

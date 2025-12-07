@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voterwa - Choose Election Type</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: white;
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      text-align: center;
+      padding-top: 80px;
+    }
+
+    /* Background Image */
+    body::before {
+      content: "";
+      position: fixed; /* fixed to stay during scroll */
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('firstbackground.jpg'); /* same background */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: brightness(0.7);
+      z-index: -2;
+    }
+
+    /* Blue overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 255, 0.3);
+      z-index: -1;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 40px;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      padding: 0 20px;
+    }
+
+    .election-btn {
+      background-color: rgba(0, 123, 255, 0.85);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 1.5rem;
+      padding: 25px 40px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      min-width: 220px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .election-btn:hover {
+      background-color: rgba(0, 86, 179, 0.9);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+    }
+
+    /* Icons emojis for fun */
+    .icon {
+      font-size: 2rem;
+    }
+
+    @media (max-width: 600px) {
+      .button-container {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .election-btn {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+<script>
+  fetch("navbar.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("navbar-container").innerHTML = data;
+    });
+</script>
+
+
+  <h1>Please choose your election type</h1>
+
+  <div class="button-container">
+    <a href="school.html" class="election-btn"><span class="icon">🏫</span> School Election</a>
+    <a href="business.html" class="election-btn"><span class="icon">🏢</span> Associations</a>
+    <a href="president-id.html" class="election-btn"><span class="icon">🇷🇼</span> Presidential Election</a>
+  </div>
+
+</body>
+</html>

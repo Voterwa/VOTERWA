@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>School Voting Results - Voterwa</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #001f3f, #001933);
+      color: white;
+    }
+
+    /* Navbar space */
+    #navbar-container {
+      margin-bottom: 20px;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #FFD700;
+    }
+
+    table {
+      width: 90%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.6);
+      color: #FFD700;
+      font-size: 18px;
+    }
+
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .no-data {
+      text-align: center;
+      color: #ccc;
+      font-style: italic;
+    }
+
+    /* Colored badges for vote counts */
+    .votes-badge {
+      display: inline-block;
+      min-width: 48px;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+      color: #001;
+      background: rgba(255,255,255,0.9);
+    }
+    .gold { background: linear-gradient(90deg,#FFD700,#FFEC8B); color: #111; box-shadow: 0 2px 6px rgba(255,215,0,0.2); }
+    .silver { background: linear-gradient(90deg,#C0C0C0,#E6E6E6); color: #111; box-shadow: 0 2px 6px rgba(192,192,192,0.15); }
+    .bronze { background: linear-gradient(90deg,#CD7F32,#E0A370); color: #111; box-shadow: 0 2px 6px rgba(205,127,50,0.12); }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div id="navbar-container"></div>
+
+  <!-- Header -->
+  <header>
+    <h1>📊 School Voting Results</h1>
+  </header>
+
+  <!-- Results Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Candidate Name</th>
+        <th>Category</th>
+        <th>Votes</th>
+      </tr>
+    </thead>
+    <tbody id="results-body">
+      <!-- Data will load here -->
+    </tbody>
+  </table>
+
+  <script>
+    // Fetch navbar if exists (preserve your original behavior)
+    fetch("navbar.html")
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById("navbar-container").innerHTML = data;
+      })
+      .catch(()=>{ /* ignore if navbar missing */ });
+
+    // Helpers for backward-compatibility and per-school DB
+    function getDB(){ return JSON.parse(localStorage.getItem('voterwaDB') || '{"schools":[]}'); }
+    function getActive(){ return JSON.parse(localStorage.getItem('activeSession') || 'null'); }
+
+    function getSchoolSettings(){
+      // Return settings for active school if available
+      const active = getActive();
+      if(!active) return null;
+      const db = getDB();
+      const school = db.schools.find(s => s.schoolCode === active.schoolCode);
+      if(!school) return null;
+      return school.settings || null;
+    }
+
+    function loadResults() {
+      // Try per-school settings first
+      const settings = getSchoolSettings();
+
+      let candidatesList = [];
+      let votesMap = {};
+
+      if (settings && (settings.candidates || Object.keys(settings).length > 0)) {
+        // flatten per-school candidates: settings.candidates is an object: category -> array of candidates
+        const candidatesObj = settings.candidates || {};
+        votesMap = settings.votes || {};
+        for (const category in candidatesObj) {
+          candidatesObj[category].forEach(c => {
+            const name = ((c.first||'') + (c.last?(' ' + c.last):'')).trim() || "Unnamed";
+            candidatesList.push({
+              id: c.id,
+              name,
+              category,
+              votes: votesMap[c.id] || 0
+            });
+          });
+        }
+      }
+
+      // fallback to old storage keys (for older data)
+      if (candidatesList.length === 0) {
+        const allCandidates = JSON.parse(localStorage.getItem("allCandidates") || '[]');
+        const votes = JSON.parse(localStorage.getItem("votes") || '{}');
+        if (allCandidates.length > 0) {
+          votesMap = votes;
+          candidatesList = allCandidates.map(c => ({
+            id: c.id,
+            name: c.name || ((c.first||'') + (c.last?(' ' + c.last):'')),
+            category: c.category || "N/A",
+            votes: votes[c.id] || votes[c.name] || 0
+          }));
+        }
+      }
+
+      const resultsBody = document.getElementById("results-body");
+      resultsBody.innerHTML = "";
+
+      if (candidatesList.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 3;
+        td.textContent = "No candidates available";
+        td.className = "no-data";
+        tr.appendChild(td);
+        resultsBody.appendChild(tr);
+        return;
+      }
+
+      // Sort descending by votes
+      candidatesList.sort((a, b) => b.votes - a.votes);
+
+      // Determine top three to color them
+      const topVotes = candidatesList.map(c => c.votes);
+      const uniqueSortedTop = Array.from(new Set(topVotes)).sort((a,b)=>b-a);
+      const goldVal = uniqueSortedTop[0] !== undefined ? uniqueSortedTop[0] : null;
+      const silverVal = uniqueSortedTop[1] !== undefined ? uniqueSortedTop[1] : null;
+      const bronzeVal = uniqueSortedTop[2] !== undefined ? uniqueSortedTop[2] : null;
+
+      candidatesList.forEach(c => {
+        const tr = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        tdName.textContent = c.name;
+
+        const tdCategory = document.createElement("td");
+        tdCategory.textContent = c.category;
+
+        const tdVotes = document.createElement("td");
+        // choose badge color based on whether this candidate is top1/2/3 (handles ties)
+        const span = document.createElement("span");
+        span.className = "votes-badge";
+        if (c.votes === goldVal) span.classList.add('gold');
+        else if (c.votes === silverVal) span.classList.add('silver');
+        else if (c.votes === bronzeVal) span.classList.add('bronze');
+        span.textContent = String(c.votes);
+        tdVotes.appendChild(span);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdCategory);
+        tr.appendChild(tdVotes);
+
+        resultsBody.appendChild(tr);
+      });
+    }
+
+    // load on open
+    loadResults();
+
+    // Monitor changes (if teacher updates while page open)
+    setInterval(() => {
+      loadResults();
+    }, 1200);
+  </script>
+
+</body>
+</html>

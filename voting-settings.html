@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voting Settings - Teacher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 20px;
+    }
+    h2 { text-align: center; color: #063970; }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+    input[type="text"], select {
+      padding: 8px;
+      width: 100%;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #003366;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+    button:hover { background-color: #0055aa; }
+    hr { margin: 20px 0; }
+    #votes-container p { margin: 5px 0; }
+    #votes-container h3 { color: #003366; }
+    #allowed-list { max-height: 220px; overflow:auto; border:1px solid #ddd; padding:8px; border-radius:6px; background:#fafafa; }
+  </style>
+</head>
+<body>
+
+<header><h2>Voting Settings ⚙️</h2></header>
+
+<div class="container">
+  <!-- Election Status -->
+  <h3>Election Status</h3>
+  <select id="election-status">
+    <option value="stopped">Not Started</option>
+    <option value="started">Ongoing</option>
+    <option value="ended">Ended</option>
+  </select>
+  <button onclick="saveElectionStatus()">Save Status</button>
+
+  <hr>
+
+  <!-- Admin Message -->
+  <h3>Admin Message</h3>
+  <textarea id="admin-message-box" placeholder="Enter admin message..."></textarea>
+  <button onclick="saveAdminMessage()">Save Message</button> 
+  <button onclick="openAllowedModal()" style="background:#006600; margin-left:10px;">Choose who is allowed to vote</button>
+
+  <div id="allowed-modal" style="display:none; margin-top:12px;">
+    <h4>Allowed Voters (check to allow)</h4>
+    <div id="allowed-list"></div>
+    <button onclick="saveAllowed()">Save Allowed List</button>
+    <button onclick="closeAllowedModal()" style="background:#cc0000; margin-left:10px;">Cancel</button>
+  </div>
+
+  <hr>
+
+  <!-- View Votes & Winners -->
+  <h3>View Winners & Votes</h3>
+  <button onclick="showVotesAndWinners()">Show Votes & Winners</button>
+  <div id="votes-container" style="margin-top: 1rem;"></div>
+
+  <!-- Back to Dashboard -->
+  <div style="margin-top:15px;">
+    <button onclick="goBack()">Back to Teacher Dashboard</button>
+  </div>
+</div>
+
+<script>
+function getDB(){ return JSON.parse(localStorage.getItem('voterwaDB') || '{"schools":[]}'); }
+function setDB(db){ localStorage.setItem('voterwaDB', JSON.stringify(db)); }
+function getActive(){ return JSON.parse(localStorage.getItem('activeSession')||'null'); }
+
+function getSchool() {
+  const active = getActive(); if(!active){ alert('Please login'); location.href='choose-role.html'; return null; }
+  const db = getDB();
+  const school = db.schools.find(s => s.schoolCode === active.schoolCode);
+  if(!school){ alert('School not found'); location.href='choose-role.html'; return null; }
+  return { db, school };
+}
+
+window.onload = () => {
+  const s = getSchool(); if(!s) return;
+  const status = s.school.settings.electionStatus || 'stopped';
+  document.getElementById('election-status').value = status;
+  document.getElementById('admin-message-box').value = s.school.settings.adminMessage || '';
+};
+
+function saveElectionStatus() {
+  const s = getSchool(); if(!s) return;
+  s.school.settings.electionStatus = document.getElementById('election-status').value;
+  setDB(s.db);
+  alert('✅ Election status saved: ' + s.school.settings.electionStatus);
+}
+
+function saveAdminMessage() {
+  const s = getSchool(); if(!s) return;
+  s.school.settings.adminMessage = document.getElementById('admin-message-box').value;
+  setDB(s.db);
+  alert('✅ Admin message saved!');
+}
+
+/* Allowed voters modal */
+function openAllowedModal(){
+  const s = getSchool(); if(!s) return;
+  const listDiv = document.getElementById('allowed-list');
+  listDiv.innerHTML = '';
+  const allowed = s.school.settings.allowedVoters || [];
+  s.school.students.forEach(st => {
+    const row = document.createElement('div');
+    row.style.padding = '6px';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.value = st.code;
+    if(allowed.includes(st.code)) chk.checked = true;
+    row.appendChild(chk);
+    const lbl = document.createElement('span');
+    lbl.style.marginLeft = '8px';
+    lbl.textContent = `${st.code} — ${st.name}`;
+    row.appendChild(lbl);
+    listDiv.appendChild(row);
+  });
+  document.getElementById('allowed-modal').style.display = 'block';
+}
+function closeAllowedModal(){ document.getElementById('allowed-modal').style.display = 'none'; }
+function saveAllowed(){
+  const s = getSchool(); if(!s) return;
+  const checked = Array.from(document.querySelectorAll('#allowed-list input[type="checkbox"]:checked')).map(i=>i.value);
+  s.school.settings.allowedVoters = checked;
+  setDB(s.db);
+  alert('✅ Allowed voter list saved!');
+  closeAllowedModal();
+}
+
+/* Show votes and winners (per school) */
+function showVotesAndWinners() {
+  const s = getSchool(); if(!s) return;
+  const settings = s.school.settings;
+  const votes = settings.votes || {};
+  const candidatesObj = settings.candidates || {};
+  // flatten candidates into array
+  const candidates = [];
+  for(const cat in candidatesObj){
+    candidatesObj[cat].forEach(c => {
+      candidates.push({ id: c.id, name: (c.first||'') + (c.last?(' '+c.last):''), category: cat });
+    });
+  }
+  if(candidates.length === 0){
+    document.getElementById('votes-container').innerHTML = '<p>No candidates found.</p>';
+    return;
+  }
+  // count total unique voters by checking votedStudents map
+  const votedStudents = settings.votedStudents || {};
+  const totalVoters = Object.keys(votedStudents).length;
+
+  // compute counts
+  let max = -1; let winner = null;
+  let output = `<h3>Total voters: ${totalVoters}</h3><hr>`;
+  candidates.forEach(c => {
+    const v = votes[c.id] || 0;
+    if(v > max){ max = v; winner = c; }
+    output += `<p>${c.name} (${c.category}) — Votes: ${v}</p>`;
+  });
+  if(winner) output += `<hr><h3>🏆 Winner: ${winner.name} (${winner.category}) — ${max} votes</h3>`;
+  document.getElementById('votes-container').innerHTML = output;
+}
+
+function goBack(){ window.location.href = 'teacher-dashboard.html'; }
+</script>
+
+</body>
+</html>

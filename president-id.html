@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Presidential Election - ID Verification</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: white;
+    text-align: center;
+    padding-top: 100px;
+    background: linear-gradient(to bottom, #001f3f, #001933);
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 40px;
+    text-shadow: 0 0 8px rgba(0,0,0,0.7);
+  }
+
+  form {
+    background-color: rgba(0,0,64,0.85);
+    padding: 40px 30px;
+    border-radius: 15px;
+    display: inline-block;
+    min-width: 300px;
+  }
+
+  label {
+    display: block;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    text-align: left;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    margin-bottom: 20px;
+    outline: none;
+  }
+
+  button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+  }
+
+  button:hover {
+    background-color: #0056b3;
+  }
+
+  .error {
+    color: #ff4c4c;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+
+  .success {
+    color: #00ff7f;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<div id="navbar-container"></div>
+
+<script>
+  fetch("navbar.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("navbar-container").innerHTML = data;
+    });
+</script>
+
+<h1>National ID Verification</h1>
+
+<form id="idForm">
+  <label for="nationalId">Enter your National ID:</label>
+  <input type="text" id="nationalId" placeholder="e.g., 1234567890123456" maxlength="16" />
+  <button type="submit">Continue</button>
+  <div id="message" class="error"></div>
+</form>
+
+<script>
+const form = document.getElementById('idForm');
+const nationalIdInput = document.getElementById('nationalId');
+const messageDiv = document.getElementById('message');
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const idValue = nationalIdInput.value.trim();
+
+  // Simple validation: numeric and 16 digits
+  const idRegex = /^\d{16}$/;
+  if (!idRegex.test(idValue)) {
+    messageDiv.textContent = "Please enter a valid 16-digit National ID.";
+    messageDiv.className = "error";
+    return;
+  }
+
+  // Save the ID (for later use on next page)
+  localStorage.setItem('nationalId', idValue);
+
+  messageDiv.textContent = "ID verified! Redirecting...";
+  messageDiv.className = "success";
+
+  setTimeout(() => {
+    window.location.href = "president welcome.html"
+  }, 1000);
+});
+</script>
+
+</body>
+</html>

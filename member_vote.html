@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member Vote – Voterwa</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(to right,#283048,#859398);color:#222;min-height:100vh;padding:40px 20px;display:flex;flex-direction:column;align-items:center;}
+h1{font-size:2.5rem;margin-bottom:30px;color:#fff;}
+form{background:white;padding:30px 40px;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.15);width:100%;max-width:500px;}
+.candidate-option{display:flex;align-items:center;margin-bottom:20px;cursor:pointer;font-size:1.2rem;border:1px solid #ccc;border-radius:12px;padding:15px 20px;transition:0.3s;}
+.candidate-option:hover{background-color:#f0f8ff;}
+.candidate-option input[type="radio"]{margin-right:20px;transform:scale(1.5);cursor:pointer;}
+button[type="submit"]{background-color:#007bff;color:white;border:none;padding:15px 30px;border-radius:10px;font-size:1.3rem;cursor:pointer;width:100%;transition:0.3s;}
+button[type="submit"]:hover{background-color:#0056b3;}
+.message{margin-top:25px;font-size:1.3rem;color:blue;text-align:center;}
+.error-msg{margin-top:15px;font-size:1.2rem;color:#ffffff;text-align:center;}
+</style>
+</head>
+<body>
+
+<h1><ins>Cast Your Vote</ins></h1>
+<form id="vote-form"></form>
+
+<div class="error-msg" id="error"></div>
+<div class="message" id="message"></div>
+
+<script>
+const adminCode=localStorage.getItem('adminCode');
+const userId=localStorage.getItem('userId');
+if(!userId){window.location.href='index.html';}
+
+// 🔵 CHECK IF USER ALREADY VOTED
+const allVotes = JSON.parse(localStorage.getItem(`votes_${adminCode}`)) || [];
+const alreadyVoted = allVotes.some(v => v.memberId === userId);
+if(alreadyVoted){
+  document.getElementById('vote-form').innerHTML = '';
+  document.getElementById('error').textContent = "You have already voted. You cannot vote twice.";
+  throw new Error("User already voted");
+}
+
+const form=document.getElementById('vote-form');
+const messageDiv=document.getElementById('message');
+const errorDiv=document.getElementById('error');
+const candidates=JSON.parse(localStorage.getItem(`candidates_${adminCode}`))||[];
+const electionLive=localStorage.getItem('electionIsLive')==='true';
+
+if(!electionLive){
+  form.innerHTML='<p>Voting is not live yet. Please wait for admin.</p>';
+}else{
+  const positions=[...new Set(candidates.map(c=>c.position))];
+  positions.forEach(pos=>{
+    const h=document.createElement('h2'); h.textContent=pos; form.appendChild(h);
+    candidates.filter(c=>c.position===pos).forEach(c=>{
+      const label=document.createElement('label'); label.className='candidate-option';
+      label.innerHTML=`<input type="radio" name="${pos}" value="${c.name}"/>${c.name}`;
+      form.appendChild(label);
+    });
+  });
+  const btn=document.createElement('button'); btn.type='submit'; btn.textContent='Submit Vote'; form.appendChild(btn);
+}
+
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  errorDiv.textContent="";
+  const votes=JSON.parse(localStorage.getItem(`votes_${adminCode}`))||[];
+  const positions=[...new Set(candidates.map(c=>c.position))];
+  let valid=true;
+  const voteObj={memberId:userId,votes:{}};
+
+  positions.forEach(pos=>{
+    const selected=form[pos]?.value;
+    if(!selected) valid=false; else voteObj.votes[pos]=selected;
+  });
+
+  if(!valid){
+    errorDiv.textContent="Please vote for all positions";
+    return;
+  }
+
+  votes.push(voteObj);
+  localStorage.setItem(`votes_${adminCode}`,JSON.stringify(votes));
+
+  messageDiv.textContent='Thank you! Your vote has been recorded.';
+  form.reset();
+
+  setTimeout(()=>{
+    window.location.href="business.html";
+  },800);
+});
+</script>
+<button onclick="window.location.href='business.html'" style="background-color: #007bff; color: white;
+transition: background-color 0.3s ease;
+cursor: pointer;
+text-align: center;
+border: none;
+padding: 10px 25px;
+bottom: 30px;
+right: 30px;
+font: size 45px;;
+border-radius: 5px;">Logout</button>
+</body>
+</html>

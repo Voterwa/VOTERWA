@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presidential Results - Voterwa</title>
+<style>
+body {
+  margin: 0;
+  padding: 40px;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(to right, #1e3c72, #2a5298);
+  color: white;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.8rem;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 5px black;
+}
+
+.winner-announcement {
+  background-color: rgba(40, 167, 69, 0.9);
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 40px;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.6);
+}
+
+.result-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 20px 30px;
+  border-radius: 16px;
+  margin: 20px auto;
+  max-width: 700px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.candidate-info {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.bar-container {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 25px;
+  margin-top: 10px;
+}
+
+.bar {
+  height: 100%;
+  text-align: right;
+  padding-right: 10px;
+  line-height: 25px;
+  color: white;
+  font-weight: bold;
+}
+
+.blue-bar { background-color: #007bff; }
+.green-bar { background-color: #28a745; }
+.red-bar { background-color: #dc3545; }
+</style>
+</head>
+<body>
+<div id="navbar-container"></div>
+
+<script>
+fetch("navbar.html")
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById("navbar-container").innerHTML = data;
+  });
+</script>
+
+<h1>Presidential Election Results</h1>
+
+<div id="winner" class="winner-announcement"></div>
+
+<div id="results-container"></div>
+
+<script>
+const candidates = [
+  {name: "John Doe", party: "Unity Party", colorClass: "blue-bar"},
+  {name: "Jane Peace", party: "Democracy Front", colorClass: "green-bar"},
+  {name: "Alex Hope", party: "Independent", colorClass: "red-bar"}
+];
+
+const votesCount = {};
+let totalVotes = 0;
+
+candidates.forEach(c => votesCount[c.name] = 0);
+
+for (let i = 0; i < localStorage.length; i++) {
+  const key = localStorage.key(i);
+  if (key.startsWith("vote_done_") && key.endsWith("_details")) {
+    const voteData = JSON.parse(localStorage.getItem(key));
+    if (voteData && voteData.candidate) {
+      votesCount[voteData.candidate] = (votesCount[voteData.candidate] || 0) + 1;
+      totalVotes++;
+    }
+  }
+}
+
+let winnerCandidate = "";
+let maxVotes = -1;
+
+candidates.forEach(c => {
+  const count = votesCount[c.name] || 0;
+  const percent = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
+  c.votes = count;
+  c.percent = percent;
+
+  if (count > maxVotes) {
+    maxVotes = count;
+    winnerCandidate = c.name;
+  }
+});
+
+const winnerData = candidates.find(c => c.name === winnerCandidate);
+document.getElementById("winner").innerHTML = winnerData
+  ? `🎉 Winning Party: <strong>${winnerData.party}</strong> – Candidate: <strong>${winnerData.name}</strong>`
+  : "No votes yet!";
+
+const resultsContainer = document.getElementById("results-container");
+
+candidates.forEach(c => {
+  const card = document.createElement("div");
+  card.classList.add("result-card");
+  card.innerHTML = `
+    <div class="candidate-info">${c.name} (${c.party}) – ${c.percent}% (${c.votes} votes)</div>
+    <div class="bar-container">
+      <div class="bar ${c.colorClass}" style="width: ${c.percent}%;"></div>
+    </div>
+  `;
+  resultsContainer.appendChild(card);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voting Results – Voterwa</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(to right,#283048,#859398);color:#fff;min-height:100vh;padding:40px 20px;}
+h1{text-align:center;font-size:2.5rem;margin-bottom:40px;}
+.result-container{max-width:800px;margin:0 auto;}
+.position-section{margin-bottom:40px;}
+.position-section h2{border-bottom:2px solid #00ffff;padding-bottom:5px;margin-bottom:20px;}
+.candidate-bar{background:#00bfff;border-radius:12px;padding:8px;color:white;margin-bottom:12px;display:flex;justify-content:space-between;}
+.candidate-name{font-weight:bold;}
+</style>
+</head>
+<body>
+
+<h1>Voting Results</h1>
+<div class="result-container" id="results"></div>
+
+<script>
+const adminCode=localStorage.getItem('adminCode');
+if(!adminCode){alert("Access denied"); window.location.href='index.html';}
+
+const resultsDiv=document.getElementById('results');
+const votes=JSON.parse(localStorage.getItem(`votes_${adminCode}`))||[];
+const candidates=JSON.parse(localStorage.getItem(`candidates_${adminCode}`))||[];
+const positions=[...new Set(candidates.map(c=>c.position))];
+
+positions.forEach(pos=>{
+  const section=document.createElement('div'); section.className='position-section';
+  const h2=document.createElement('h2'); h2.textContent=pos; section.appendChild(h2);
+
+  const posCandidates=candidates.filter(c=>c.position===pos);
+  const voteCount={}; posCandidates.forEach(c=>voteCount[c.name]=0);
+  votes.forEach(v=>{
+    if(v.votes[pos]) voteCount[v.votes[pos]]++;
+  });
+
+  const sorted=Object.entries(voteCount).sort((a,b)=>b[1]-a[1]);
+  sorted.forEach(([name,count])=>{
+    const bar=document.createElement('div'); bar.className='candidate-bar'; bar.style.width='100%';
+    bar.innerHTML=`<span class="candidate-name">${name}</span><span>${count} votes</span>`;
+    section.appendChild(bar);
+  });
+
+  resultsDiv.appendChild(section);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <div id="navbar-container"></div>
+<script>
+fetch('navbar.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('navbar-container').innerHTML = data;
+  })
+  .catch(err => console.error('Failed to load navbar:', err));
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Candidates – Voterwa</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;min-height:100vh;padding:40px 20px;}
+h1{text-align:center;font-size:2.5rem;margin-bottom:30px;text-shadow:1px 1px 5px rgba(0,0,0,0.7);}
+.form-container{max-width:800px;margin:0 auto;background:rgba(255,255,255,0.1);padding:30px;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,0.5);}
+.input-group{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:20px;}
+input{flex:1;padding:12px;font-size:1.1rem;border:none;border-radius:8px;}
+button{padding:12px 30px;font-size:1.1rem;border:none;border-radius:10px;background-color:#00ff99;color:black;cursor:pointer;transition:0.3s;}
+button:hover{background-color:#66ffcc;}
+table{width:100%;margin-top:25px;border-collapse:collapse;background:rgba(255,255,255,0.1);}
+th, td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.2);text-align:left;}
+th{background:rgba(0,0,0,0.3);}
+.delete-btn{background:red;border:none;color:white;padding:8px 15px;border-radius:8px;cursor:pointer;}
+.delete-btn:hover{background:darkred;}
+</style>
+</head>
+<body>
+
+<h1>Create Candidates</h1>
+
+<div class="form-container">
+  <div class="input-group">
+    <input type="text" id="candidateName" placeholder="Enter candidate name...">
+    <input type="text" id="positionName" placeholder="Enter position...">
+    <button id="addCandidateBtn">Add Candidate</button>
+  </div>
+
+  <table id="candidatesTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Position</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div style="text-align:center;margin-top:20px;">
+    <button id="saveCandidatesBtn">Save Candidates</button>
+  </div>
+</div>
+
+<script>
+const adminCode=localStorage.getItem('adminCode');
+if(!adminCode) window.location.href="index.html";
+
+let candidates=JSON.parse(localStorage.getItem(`candidates_${adminCode}`))||[];
+
+const nameInput=document.getElementById('candidateName');
+const posInput=document.getElementById('positionName');
+const addBtn=document.getElementById('addCandidateBtn');
+const saveBtn=document.getElementById('saveCandidatesBtn');
+const tableBody=document.querySelector('#candidatesTable tbody');
+
+function renderTable(){
+  tableBody.innerHTML='';
+  candidates.forEach((c,i)=>{
+    const row=document.createElement('tr');
+    row.innerHTML=`<td>${i+1}</td><td>${c.name}</td><td>${c.position}</td>
+    <td><button class="delete-btn" onclick="deleteCandidate(${i})">Delete</button></td>`;
+    tableBody.appendChild(row);
+  });
+}
+
+function deleteCandidate(i){
+  if(confirm("Delete this candidate?")){
+    candidates.splice(i,1);
+    renderTable();
+    localStorage.setItem(`candidates_${adminCode}`, JSON.stringify(candidates));
+  }
+}
+
+addBtn.addEventListener('click',()=>{
+  const name=nameInput.value.trim();
+  const position=posInput.value.trim();
+  if(!name || !position){alert("Enter both name and position!"); return;}
+  candidates.push({name,position});
+  renderTable();
+  nameInput.value=''; posInput.value='';
+});
+
+saveBtn.addEventListener('click',()=>{
+  localStorage.setItem(`candidates_${adminCode}`, JSON.stringify(candidates));
+  alert("Candidates saved!");
+});
+
+renderTable();
+</script>
+</body>
+</html>
