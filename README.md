@@ -1,2 +1,1 @@
-# VOTERWA
-VoteRwa Web application
+
