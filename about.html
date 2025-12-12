@@ -93,16 +93,16 @@
   </style>
 </head>
 <body>
+  </script>
+<div id="navbar-container"></div>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="help.html">Help</a>
-    <a href="contact.html">Contact</a>
-    <a href="service.html">Service</a>
-   
-    <a href="about.html">About</a>
-  </nav>
-
+<script>
+  fetch("navbar.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("navbar-container").innerHTML = data;
+    });
+</script>
   <h1>About VoteRwanda</h1>
 
   <section>
@@ -130,3 +130,4 @@
 
 </body>
 </html>
+
